@@ -19,7 +19,7 @@ TS  = TILESIZE  = 40
 COLS = COLUMNS  = 20
 ROWS            = 20
 
-CLOCKRATE = 1 # refreshes per second. Should be 60 eventually.
+CLOCKRATE = 60 # refreshes per second. Should be 60 eventually.
 
 WHITE     = 255,255,255
 BLACK     = 0,0,0
@@ -30,8 +30,9 @@ GREEN     = 0,128,0
 RED       = 255,0,0
 BLUE      = 0,0,255
 ORANGE    = 255,165,0
+GREY      = 127,127,127
 
-RANKS     = ('A','2','3','4','5','6','7','8','9','10','J','Q','K')
+RANKS     = ('A','2','3','4','5','6','7','8','9','10','J','Q','K','')
 SUITS     = (u'\u2660',u'\u2663',u'\u2665',u'\u2666')
 
 SPADE   = u'\u2660'
@@ -71,8 +72,8 @@ f1 = pygame.font.Font("ARIALNB.TTF",64)
 f2 = pygame.font.Font("ARIALNB.TTF",32)
 f3 = pygame.font.Font("ARIALNB.TTF",24)
 
-TITLE       = "SNEK"
-textTITLE   = "SNEK"
+TITLE       = "SOLO SNAKE"
+textTITLE   = "SOLO SNAKE"
 dispTITLE   = f1.render(textTITLE, True, PURPLE)
 rectTITLE = dispTITLE.get_rect()
 rectTITLE.topleft=STTL
@@ -114,8 +115,13 @@ class Board:
             for x in range(size[0]):
                 temp.append('')
             self.field.append(temp)
-    # pick a random card from the deck, move it to the field
-    def dealOne(self):
+    '''        
+    Given just a card, placeCard picks a random location on the board
+    Given a position, placeCard will test that location for validity
+    then place the card if empty, swap cards if another card is present
+    or ?do nothing? if part of the snake is there
+    '''
+    def placeCard(card,pos=[0,0]):
         pass
 
 '''
@@ -128,11 +134,31 @@ class Deck:
         self.cards = []
         for idx, suit in enumerate(SUITS):
             for idy, rank in enumerate(RANKS):
-                self.cards.append(Card([idx*TS,idy*TS],suit,rank))
-
+                self.cards.append(Card([(idx+1)*TS,(idy+1)*TS],suit,rank))
+    '''
+    Mostly just for debugging purposes
+    '''
     def printAll(self):
         for card in self.cards:
             card.draw()
+
+    '''
+    Take a random card from the Deck if not shuffled, or the top
+    card if the Deck has been shuffled in advance.
+    '''
+    def dealOne(self):
+        pass
+
+'''
+Foundations are the four piles where cards go, in order from least
+to greatest, after they are removed from one of the seven piles in
+play in Klondike, or one of the seven segments of the snake in this
+game. The player wins when all of the cards from the Deck have been
+transferred to the appropriate Foundation.
+'''
+class Foundation:
+    def __init__(self,suit):
+        self.cards = []
 
 '''
 Snek is essentially a list of cards (and suit segments) that 'moves'
@@ -156,6 +182,9 @@ class Snek:
         self.length = length
         self.past = []
 
+    '''
+    NOM NOM NOM
+    '''
     def addCard(self,suit,rank):
         self.past.append(Card(len(self.queue),suit,rank))
 
@@ -164,9 +193,9 @@ class Snek:
         pass
     
 '''
-class Pile:
-'''    
-
+Cards have suits, ranks, and positions. Everything else included
+here is for layout purposes.
+'''
 class Card:
     def __init__(self,pos=[0,0],suit=CLUB,rank="A"):
         self.pos = pos
@@ -181,7 +210,14 @@ class Card:
         self.rxoff = 0
         self.ryoff = 0
 
-        if self.suit == CLUB:
+        if self.rank == "":
+            self.suit_color = GREY
+            self.rank_color = GREY
+            self.sxoff = int(TS*.50)
+            self.syoff = int(TS*.38)
+            self.rxoff = int(TS*.50)
+            self.ryoff = int(TS*.50)
+        elif self.suit == CLUB:
             self.suit_color = BLACK
             self.rank_color = BLACK
             self.sxoff = int(TS*.70)
@@ -209,18 +245,20 @@ class Card:
             self.syoff = int(TS*.65)
             self.rxoff = int(TS*.30)
             self.ryoff = int(TS*.35)
-            
 
         self.rank_disp = f2.render(self.rank, True, self.rank_color)
         self.rank_rect = self.rank_disp.get_rect()
         self.rank_rect.center = [self.pos[0]+self.rxoff,self.pos[1]+self.ryoff]
 
-        self.suit_disp = f2.render(self.suit, True, self.suit_color)
+        if self.rank == "":
+            self.suit_disp = f1.render(self.suit, True, self.suit_color)
+        else:
+            self.suit_disp = f2.render(self.suit, True, self.suit_color)
         self.suit_rect = self.suit_disp.get_rect()
         self.suit_rect.center = [self.pos[0]+self.sxoff,self.pos[1]+self.syoff]
 
     def draw(self):
-        pygame.draw.rect(screen, WHITE, (self.pos[0],self.pos[1],TS,TS), border_radius=int(TS*.2))
+        pygame.draw.rect(screen, WHITE, (self.pos[0],self.pos[1],TS-2,TS-2), border_radius=int(TS*.2))
         screen.blit(self.suit_disp, self.suit_rect)
         screen.blit(self.rank_disp, self.rank_rect)
         pygame.display.flip()
@@ -228,7 +266,9 @@ class Card:
 def main():
 
     # draw playfield border
-    pygame.draw.rect(background, (255,255,0), (BX, BY, (TS * COLUMNS), (TS * ROWS)), 2) 
+    pygame.draw.rect(background, (255,255,0), (BX-1, BY-1, (TS * COLUMNS)+2, (TS * ROWS)+2), 2) 
+
+    # Move these to Foundation Class
     pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+1)+ 5,TS*7 ,TS,TS*14),2)
     pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+2)+10,TS*7 ,TS,TS*14),2)
     pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+3)+15,TS*7 ,TS,TS*14),2)
@@ -236,22 +276,23 @@ def main():
 
     test_deck = Deck()
 
-    while(1):
+    screen.blit(background,  (0,0))
+    screen.blit(dispTITLE,   rectTITLE)
 
-        #screen.blit(background,  (0,0))
-        screen.blit(dispTITLE,   rectTITLE)
-        screen.blit(dispSPADE,   rectSPADE)
-        screen.blit(dispCLUB,    rectCLUB)
-        screen.blit(dispHEART,   rectHEART)
-        screen.blit(dispDIAMOND, rectDIAMOND)
+    done = False
+
+    while(not done):
+        for event in pygame.event.get(): # User did something
+            if event.type == pygame.QUIT: # If user clicked close
+                done = True # Flag that we are done so we exit this loop
 
         test_deck.printAll()
-        #pygame.draw.circle(screen, RED, [400,400], 20)
 
         # update everything
         pygame.display.flip()
         clock.tick(CLOCKRATE)
-        
+
+    print("Finished")
         
 if __name__ == "__main__":
     main()
