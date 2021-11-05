@@ -31,6 +31,9 @@ RED       = 255,0,0
 BLUE      = 0,0,255
 ORANGE    = 255,165,0
 
+RANKS     = ('A','2','3','4','5','6','7','8','9','10','J','Q','K')
+SUITS     = (u'\u2660',u'\u2663',u'\u2665',u'\u2666')
+
 SPADE   = u'\u2660'
 CLUB    = u'\u2663'
 HEART   = u'\u2665'
@@ -123,9 +126,13 @@ should be no duplicates in play!)
 class Deck:
     def __init__(self):
         self.cards = []
-        for suit in (SPADE,CLUB,HEART,DIAMOND):
-            for rank in ('A','2','3','4','5','6','7','8','9','10','J','Q','K'):
-                self.cards.append(Card([-1,-1],suit,rank))                
+        for idx, suit in enumerate(SUITS):
+            for idy, rank in enumerate(RANKS):
+                self.cards.append(Card([idx*TS,idy*TS],suit,rank))
+
+    def printAll(self):
+        for card in self.cards:
+            card.draw()
 
 '''
 Snek is essentially a list of cards (and suit segments) that 'moves'
@@ -222,29 +229,23 @@ def main():
 
     # draw playfield border
     pygame.draw.rect(background, (255,255,0), (BX, BY, (TS * COLUMNS), (TS * ROWS)), 2) 
-    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+1)+ 5,TS*3 ,TS,TS*14),2)
-    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+2)+10,TS*3 ,TS,TS*14),2)
-    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+3)+15,TS*3 ,TS,TS*14),2)
-    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+4)+20,TS*3 ,TS,TS*14),2)
+    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+1)+ 5,TS*7 ,TS,TS*14),2)
+    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+2)+10,TS*7 ,TS,TS*14),2)
+    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+3)+15,TS*7 ,TS,TS*14),2)
+    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+4)+20,TS*7 ,TS,TS*14),2)
 
-    test_heart   = Card([200,200],HEART,"A")
-    test_diamond = Card([250,200],DIAMOND,"2")
-    test_club    = Card([300,200],CLUB,"10")
-    test_spade   = Card([350,200],SPADE,"4")
+    test_deck = Deck()
 
     while(1):
 
-        screen.blit(background,  (0,0))
+        #screen.blit(background,  (0,0))
         screen.blit(dispTITLE,   rectTITLE)
         screen.blit(dispSPADE,   rectSPADE)
         screen.blit(dispCLUB,    rectCLUB)
         screen.blit(dispHEART,   rectHEART)
         screen.blit(dispDIAMOND, rectDIAMOND)
 
-        test_heart.draw()
-        test_diamond.draw()
-        test_club.draw()
-        test_spade.draw()
+        test_deck.printAll()
         #pygame.draw.circle(screen, RED, [400,400], 20)
 
         # update everything
