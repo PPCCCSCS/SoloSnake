@@ -19,11 +19,7 @@ TS  = TILESIZE  = 40
 COLS = COLUMNS  = 20
 ROWS            = 20
 
-CLOCKRATE = 60 # refreshes per second. Should be 60 eventually.
-WALK      = int(CLOCKRATE)
-RUN       = int(2*CLOCKRATE)
-CRAWL     = int(CLOCKRATE/2)
-SPEED     = RUN
+CLOCKRATE = 1 # refreshes per second. Should be 60 eventually.
 
 WHITE     = 255,255,255
 BLACK     = 0,0,0
@@ -34,9 +30,8 @@ GREEN     = 0,128,0
 RED       = 255,0,0
 BLUE      = 0,0,255
 ORANGE    = 255,165,0
-GREY      = 127,127,127
 
-RANKS     = ('','A','2','3','4','5','6','7','8','9','10','J','Q','K')
+RANKS     = ('A','2','3','4','5','6','7','8','9','10','J','Q','K')
 SUITS     = (u'\u2660',u'\u2663',u'\u2665',u'\u2666')
 
 SPADE   = u'\u2660'
@@ -76,8 +71,8 @@ f1 = pygame.font.Font("ARIALNB.TTF",64)
 f2 = pygame.font.Font("ARIALNB.TTF",32)
 f3 = pygame.font.Font("ARIALNB.TTF",24)
 
-TITLE       = "SOLO SNAKE"
-textTITLE   = "SOLO SNAKE"
+TITLE       = "SNEK"
+textTITLE   = "SNEK"
 dispTITLE   = f1.render(textTITLE, True, PURPLE)
 rectTITLE = dispTITLE.get_rect()
 rectTITLE.topleft=STTL
@@ -102,6 +97,9 @@ rectDIAMOND.topleft=[TS*(COLUMNS+4)+ 35,TS*3]
 screen = pygame.display.set_mode((WIDTH,HEIGHT))
 background = pygame.Surface((WIDTH,HEIGHT))
 
+keys = pygame.key.get_pressed()
+clock = pygame.time.Clock()
+
 '''
 Game board defaults to 20x20. Each position should be empty, initially,
 but we'll populate random positions with cards from the deck after the
@@ -116,13 +114,8 @@ class Board:
             for x in range(size[0]):
                 temp.append('')
             self.field.append(temp)
-    '''        
-    Given just a card, placeCard picks a random location on the board
-    Given a position, placeCard will test that location for validity
-    then place the card if empty, swap cards if another card is present
-    or ?do nothing? if part of the snake is there
-    '''
-    def placeCard(card,pos=[0,0]):
+    # pick a random card from the deck, move it to the field
+    def dealOne(self):
         pass
 
 '''
@@ -135,40 +128,11 @@ class Deck:
         self.cards = []
         for idx, suit in enumerate(SUITS):
             for idy, rank in enumerate(RANKS):
-                self.cards.append(Card([(idx+1)*TS,(idy+1)*TS],suit,rank))
-    '''
-    Mostly just for debugging purposes
-    '''
+                self.cards.append(Card([idx*TS,idy*TS],suit,rank))
+
     def printAll(self):
         for card in self.cards:
             card.draw()
-
-    '''
-    Take a random card from the Deck if not shuffled, or the top
-    card if the Deck has been shuffled in advance.
-    '''
-    def dealOne(self):
-        pass
-
-'''
-Foundations are the four piles where cards go, in order from least
-to greatest, after they are removed from one of the seven piles in
-play in Klondike, or one of the seven segments of the snake in this
-game. The player wins when all of the cards from the Deck have been
-transferred to the appropriate Foundation.
-'''
-class Foundation:
-    def __init__(self,suit):
-        self.cards = [Card(suit='')]
-
-    def draw(self,pos=[1,1]):
-        pygame.draw.rect(background, (255,255,0), (TS*pos[0]+ 5,TS*pos[1] ,TS,TS*14),2)
-
-    def refresh(self):
-        for i, card in enumerate(self.cards):
-            card.move(self.pos[0],self.pos[1]+(TS*i))
-            card.draw()
-            pygame.display.flip()
 
 '''
 Snek is essentially a list of cards (and suit segments) that 'moves'
@@ -185,54 +149,27 @@ is a valid solitaire move; if yes, the card is added to the Snek's
 queue, and gameplay continues. If no, well, game-over man.
 '''
 class Snek:
-    def __init__(self,pos=[0,0],vel=[0,WALK],length=7):
+    def __init__(self,pos=[0,0],vel=[0,-1],length=7):
         self.pos = pos
         self.vel = vel
-        self.queue = [Card(self.pos,DIAMOND,"00")]
+        self.queue = []
         self.length = length
-        
-        for suit in SUITS:
-            for rank in RANKS:
-                self.addCard(suit,rank)
+        self.past = []
 
-    '''
-    NOM NOM NOM
-    '''
     def addCard(self,suit,rank):
-        self.queue.append(Card(self.pos,suit,rank))
+        self.past.append(Card(len(self.queue),suit,rank))
 
     # Decisions to be made here
     def testCard(self,card):
         pass
-
-    def draw(self):
-        for i,c in enumerate(self.queue):
-            if c.isNextTile():
-                if i < len(self.queue)-1:
-                    self.queue[i+1].nextMove =  c.thisMove
-            c.draw()
-            c.move()
-
-    def steer(self,way):
-        self.vel = way
-        self.queue[0].nextMove = way          
-
-    '''
-    Need a method to determine if steering is 90 degrees r/l,
-    and if not needs to ignore input.
-
-    Need a method to test if head snake position is at integer
-    tile position, and trigger steering if so, on a card by card
-    basis.
-    '''
     
 '''
-Cards have suits, ranks, and positions. Everything else included
-here is for layout purposes.
-'''
+class Pile:
+'''    
+
 class Card:
-    def __init__(self,pos=[0,0],suit=CLUB,rank="",bg=WHITE):
-        self.pos = [pos[0]*TS,pos[1]*TS]
+    def __init__(self,pos=[0,0],suit=CLUB,rank="A"):
+        self.pos = pos
         self.suit = suit
         self.rank = rank
         self.suit_disp = None
@@ -243,113 +180,78 @@ class Card:
         self.syoff = 0
         self.rxoff = 0
         self.ryoff = 0
-        self.bgcol = bg
-        self.thisMove = [0,0]
-        self.nextMove = [0,0]
-        
-    def move(self):
-        if self.isNextTile():
-            self.thisMove = self.nextMove
-        self.pos = [self.pos[0]+self.thisMove[0]/CLOCKRATE,
-                    self.pos[1]+self.thisMove[1]/CLOCKRATE]
 
-    def isNextTile(self):
-        if self.pos[0]%TS == 0 and self.pos[1]%TS == 0:
-            return True
-        else:
-            return False
-
-    def draw(self):
-        def tset(sc,rc,sx,sy,rx,ry,bg=WHITE):
-            self.suit_color = sc
-            self.rank_color = rc
-            self.sxoff = int(TS*sx)
-            self.syoff = int(TS*sy)
-            self.rxoff = int(TS*rx)
-            self.ryoff = int(TS*ry)
-            self.bgcol = bg
-
-        if self.rank == "":
-            tset(GREY,GREY,.5,.38,.5,.5)
-        elif self.rank == "00":
-            tset(RED,WHITE,.5,.65,.55,.35,GREEN)
-        elif self.suit == CLUB:
-            tset(BLACK,BLACK,.7,.65,.3,.35)
+        if self.suit == CLUB:
+            self.suit_color = BLACK
+            self.rank_color = BLACK
+            self.sxoff = int(TS*.70)
+            self.syoff = int(TS*.65)
+            self.rxoff = int(TS*.30)
+            self.ryoff = int(TS*.35)
         elif self.suit == SPADE:
-            tset(BLACK,BLACK,.75,.65,.3,.35)
+            self.suit_color = BLACK
+            self.rank_color = BLACK
+            self.sxoff = int(TS*.75)
+            self.syoff = int(TS*.65)
+            self.rxoff = int(TS*.30)
+            self.ryoff = int(TS*.35)
         elif self.suit == DIAMOND:
-            tset(RED,BLACK,.75,.65,.3,.35)
+            self.suit_color = RED
+            self.rank_color = BLACK
+            self.sxoff = int(TS*.75)
+            self.syoff = int(TS*.65)
+            self.rxoff = int(TS*.30)
+            self.ryoff = int(TS*.35)
         elif self.suit == HEART:
-            tset(RED,BLACK,.7,.65,.3,.35)
+            self.suit_color = RED
+            self.rank_color = BLACK
+            self.sxoff = int(TS*.70)
+            self.syoff = int(TS*.65)
+            self.rxoff = int(TS*.30)
+            self.ryoff = int(TS*.35)
             
+
         self.rank_disp = f2.render(self.rank, True, self.rank_color)
         self.rank_rect = self.rank_disp.get_rect()
         self.rank_rect.center = [self.pos[0]+self.rxoff,self.pos[1]+self.ryoff]
 
-        if self.rank == "":
-            self.suit_disp = f1.render(self.suit, True, self.suit_color)
-        elif self.rank == "00":
-            self.suit_disp = f3.render(self.suit, True, self.suit_color)
-            self.rank_disp = f3.render(self.rank, True, self.rank_color)
-        else:
-            self.suit_disp = f2.render(self.suit, True, self.suit_color)
-            
+        self.suit_disp = f2.render(self.suit, True, self.suit_color)
         self.suit_rect = self.suit_disp.get_rect()
         self.suit_rect.center = [self.pos[0]+self.sxoff,self.pos[1]+self.syoff]
 
-        pygame.draw.rect(screen, self.bgcol, (self.pos[0],self.pos[1],TS-2,TS-2), border_radius=int(TS*.2))
+    def draw(self):
+        pygame.draw.rect(screen, WHITE, (self.pos[0],self.pos[1],TS,TS), border_radius=int(TS*.2))
         screen.blit(self.suit_disp, self.suit_rect)
         screen.blit(self.rank_disp, self.rank_rect)
+        pygame.display.flip()
 
 def main():
 
     # draw playfield border
-    pygame.draw.rect(background, (255,255,0), (BX-1, BY-1, (TS * COLUMNS)+2, (TS * ROWS)+2), 2)
-
-    # Move this into a class
-    foundation_spade = Foundation(SPADE)
-    foundation_spade.draw([21,7])
-    foundation_club = Foundation(CLUB)
-    foundation_club.draw([22,7])
-    foundation_heart = Foundation(HEART)
-    foundation_heart.draw([23,7])
-    foundation_diamond = Foundation(DIAMOND)
-    foundation_diamond.draw([24,7])
+    pygame.draw.rect(background, (255,255,0), (BX, BY, (TS * COLUMNS), (TS * ROWS)), 2) 
+    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+1)+ 5,TS*7 ,TS,TS*14),2)
+    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+2)+10,TS*7 ,TS,TS*14),2)
+    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+3)+15,TS*7 ,TS,TS*14),2)
+    pygame.draw.rect(background, (255,255,0), (TS*(COLUMNS+4)+20,TS*7 ,TS,TS*14),2)
 
     test_deck = Deck()
 
-    screen.blit(background,  (0,0))
-    screen.blit(dispTITLE,   rectTITLE)
+    while(1):
 
-    done = False
+        #screen.blit(background,  (0,0))
+        screen.blit(dispTITLE,   rectTITLE)
+        screen.blit(dispSPADE,   rectSPADE)
+        screen.blit(dispCLUB,    rectCLUB)
+        screen.blit(dispHEART,   rectHEART)
+        screen.blit(dispDIAMOND, rectDIAMOND)
 
-    sn = Snek([10,10])
+        test_deck.printAll()
+        #pygame.draw.circle(screen, RED, [400,400], 20)
 
-    while 1:
-
-        for event in pygame.event.get():
-
-            if event.type == pygame.KEYUP:
-                if event.key == K_ESCAPE:
-                    sys.exit()
-
-                if event.key == K_LEFT:
-                    sn.steer([-SPEED,0])
-                if event.key == K_RIGHT:
-                    sn.steer([SPEED,0])
-                if event.key == K_UP:
-                    sn.steer([0,-SPEED])
-                if event.key == K_DOWN:
-                    sn.steer([0,SPEED])
-        
-        #test_deck.printAll()
-        screen.blit(background,  (0,0))
-        sn.draw()
         # update everything
         pygame.display.flip()
         clock.tick(CLOCKRATE)
-
-    print("Finished")
+        
         
 if __name__ == "__main__":
     main()
