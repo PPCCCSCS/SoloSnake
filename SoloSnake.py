@@ -217,30 +217,36 @@ class Snek:
                       Card(self.pos,"","5"),
                       Card(self.pos,"","6"),
                       Card(self.pos,"","7")]
-        self.length = length
-
-        #for suit in SUITS:
-        #    for rank in RANKS:
-        #        self.addCard(suit,rank)
+        self.pile = []
+        '''
+        for suit in SUITS:
+            for rank in RANKS:
+                self.queue.append(Card(self.pos,suit,rank))
+        '''
+        self.length = len(self.queue)
         
     '''
     NOM NOM NOM
     '''
     def addCard(self,suit,rank):
+        ### Simple append won't work;
+        #insert at top of relevant segment
         self.queue.append(Card(self.pos,suit,rank))
 
     # Decisions to be made here
     def testCard(self,card):
         pass
 
-    def draw(self):
+    def draw(self,gameover=False):
+        
         for i,c in enumerate(self.queue):
             if c.isNextTile():
-                if i < len(self.queue)-1:
-                    self.queue[i+1].nextMove =  c.thisMove
+               if i < len(self.queue)-1:
+                   self.queue[i+1].nextMove =  c.thisMove
         for c in reversed(self.queue):
-            c.draw()
+            c.draw(gameover)
             c.move()
+
 
     def steer(self,way):
 
@@ -297,7 +303,7 @@ class Card:
         else:
             return False
 
-    def draw(self):
+    def draw(self,gameover=False):
         def tset(sc,rc,sx,sy,rx,ry,bg=WHITE):
             self.suit_color = sc
             self.rank_color = rc
@@ -308,19 +314,40 @@ class Card:
             self.bgcol = bg
 
         if self.rank == "":
-            tset(GREY,GREY,.5,.38,.5,.5)
+            if not gameover:
+                tset(GREY,GREY,.5,.38,.5,.5)
+            else:
+                tset(GREY,GREY,.5,.38,.5,.5,GREY)
         elif self.suit == "":
-            tset(RED,RED,.5,.5,.5,.5,GREEN)
+            if not gameover:
+                tset(RED,RED,.5,.5,.5,.5,GREEN)
+            else:
+                tset(GREY,GREY,.5,.5,.5,.5,GREY)
         elif self.rank == "00":
-            tset(RED,WHITE,.5,.65,.55,.35,GREEN)
+            if not gameover:
+                tset(RED,WHITE,.5,.65,.55,.35,GREEN)
+            else:
+                tset(RED,WHITE,.5,.65,.55,.35,GREY)
         elif self.suit == CLUB:
-            tset(BLACK,BLACK,.7,.65,.3,.35)
+            if not gameover:
+                tset(BLACK,BLACK,.7,.65,.3,.35)
+            else:
+                tset(GREY,GREY,.7,.65,.3,.35,GREY)
         elif self.suit == SPADE:
-            tset(BLACK,BLACK,.75,.65,.3,.35)
+            if not gameover:
+                tset(BLACK,BLACK,.75,.65,.3,.35)
+            else:
+                tset(GREY,GREY,.75,.65,.3,.35,GREY)
         elif self.suit == DIAMOND:
-            tset(RED,BLACK,.75,.65,.3,.35)
+            if not gameover:
+                tset(RED,BLACK,.75,.65,.3,.35)
+            else:
+                tset(GREY,GREY,.75,.65,.3,.35,GREY)
         elif self.suit == HEART:
-            tset(RED,BLACK,.7,.65,.3,.35)
+            if not gameover:
+                tset(RED,BLACK,.7,.65,.3,.35)
+            else:
+                tset(GREY,GREY,.7,.65,.3,.35,GREY)
             
         self.rank_disp = f2.render(self.rank, True, self.rank_color)
         self.rank_rect = self.rank_disp.get_rect()
@@ -329,8 +356,12 @@ class Card:
         if self.rank == "":
             self.suit_disp = f1.render(self.suit, True, self.suit_color)
         elif self.rank == "00":
-            self.suit_disp = f3.render(self.suit, True, self.suit_color)
-            self.rank_disp = f3.render(self.rank, True, self.rank_color)
+            if gameover == False:
+                self.suit_disp = f3.render(self.suit, True, self.suit_color)
+                self.rank_disp = f3.render(self.rank, True, self.rank_color)
+            else:
+                self.suit_disp = f3.render("-", True, WHITE)
+                self.rank_disp = f3.render("XX", True, BLACK)
         else:
             self.suit_disp = f2.render(self.suit, True, self.suit_color)
             
@@ -394,6 +425,9 @@ def main():
         clock.tick(CLOCKRATE)
 
     print("GAME OVER")
+    screen.blit(background,  (0,0))
+    sn.draw(True)
+    pygame.display.flip()
     sys.exit()
         
 if __name__ == "__main__":
