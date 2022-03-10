@@ -23,7 +23,7 @@ CLOCKRATE = 60 # refreshes per second. Should be 60 eventually.
 WALK      = int(CLOCKRATE)
 RUN       = int(2*CLOCKRATE)
 CRAWL     = int(CLOCKRATE/2)
-SPEED     = RUN*2
+SPEED     = RUN#*2
 
 WHITE     = 255,255,255
 BLACK     = 0,0,0
@@ -112,6 +112,10 @@ class Board:
     def __init__(self,size=(COLS,ROWS)):
         self.field = []
         self.deck = Deck()
+        self.dealtCards = []
+        self.snake = Snek([COLS//2,ROWS//2])
+        #print(self.snake.pos)
+        
         for y in range(size[1]):
             temp = []
             for x in range(size[0]):
@@ -139,13 +143,23 @@ class Board:
     then place the card if empty, swap cards if another card is present
     or ?do nothing? if part of the snake is there
     '''
-    def placeCard(card,pos=[0,0]):
-        pass
+    def placeCard(self):
+        placed = False
+        
+        while placed == False:
+            x = randint(0,COLS-1)
+            y = randint(0,ROWS-1)
 
+            if self.field[x][y] == '':
+                tcard = self.deck.dealOne()
+                tcard.setPos([x,y])
+                self.field[x][y] = tcard
+                self.dealtCards.append(tcard)
+                placed = True
+                
     def tileContains(self,pos=[0,0]):
         return self.field[pos[0]][pos[1]]
         
-
 '''
 Deck is just a list of (initially) all possible playing cards. Remove
 Cards from the Deck whenver they are added to the game board (there
@@ -155,7 +169,7 @@ class Deck:
     def __init__(self):
         self.cards = []
         for idx, suit in enumerate(SUITS):
-            for idy, rank in enumerate(RANKS):
+            for idy, rank in enumerate(RANKS[1:]):
                 self.cards.append(Card([(idx+1)*TS,(idy+1)*TS],suit,rank))
     '''
     Mostly just for debugging purposes
@@ -169,7 +183,14 @@ class Deck:
     card if the Deck has been shuffled in advance.
     '''
     def dealOne(self):
-        pass
+        if len(self.cards) > 0:
+            print(len(self.cards))
+            try:
+                return self.cards.pop(randint(0,len(self.cards)-1))
+            except:
+                print("What?",len(self.cards))
+        else:
+            return Card(suit="",rank="")
 
 '''
 Foundations are the four piles where cards go, in order from least
@@ -217,6 +238,7 @@ class Snek:
                       Card(self.pos,"","5"),
                       Card(self.pos,"","6"),
                       Card(self.pos,"","7")]
+        self.hitboxes = {str([int(self.queue[0].pos[0]),int(self.queue[0].pos[1])]):len(self.queue)}
         self.pile = []
         '''
         for suit in SUITS:
@@ -229,9 +251,33 @@ class Snek:
     NOM NOM NOM
     '''
     def addCard(self,suit,rank):
+
+        '''
+          ___ _____  __  _____ _  _ ___ ___ 
+         | __|_ _\ \/ / |_   _| || |_ _/ __|
+         | _| | | >  <    | | | __ || |\__ \
+         |_| |___/_/\_\   |_| |_||_|___|___/
+        '''
+                                    
         ### Simple append won't work;
         #insert at top of relevant segment
-        self.queue.append(Card(self.pos,suit,rank))
+        print(self.queue[0].pos)
+        self.queue.append(Card((self.queue[-1].pos[0]//TS,self.queue[-1].pos[1]//TS),suit,rank,self.queue[-2].nextMove))
+
+    def addHitbox(self):
+
+        del_list = []
+        
+        for hb in self.hitboxes:
+            if self.hitboxes[hb] > 0:
+                self.hitboxes[hb] -= 1
+            else:
+                del_list.append(hb)
+
+        for dhb in del_list:
+            del self.hitboxes[dhb]
+            
+        self.hitboxes[str([int(self.queue[0].pos[0]),int(self.queue[0].pos[1])])] = len(self.queue)
 
     # Decisions to be made here
     def testCard(self,card):
@@ -240,13 +286,18 @@ class Snek:
     def draw(self,gameover=False):
         
         for i,c in enumerate(self.queue):
-            if c.isNextTile():
-               if i < len(self.queue)-1:
-                   self.queue[i+1].nextMove =  c.thisMove
+            if self.queue[0].isNextTile():
+                if i < len(self.queue)-1:
+                    self.queue[i+1].nextMove =  c.thisMove
+                    if self.queue[i+1].thisMove == c.thisMove:
+                        if self.queue[i+1].thisMove[0] != 0:
+                            self.queue[i+1].pos[1] = c.pos[1]
+                        else:
+                            self.queue[i+1].pos[0] = c.pos[0]
+                        
         for c in reversed(self.queue):
             c.draw(gameover)
-            c.move()
-
+            c.move(self.atNextTile())
 
     def steer(self,way):
 
@@ -269,13 +320,19 @@ class Snek:
     def tailPos(self):
         return [ int(self.queue[-1].pos[0]/TS),int(self.queue[-1].pos[1]/TS)]
 
+    def atNextTile(self):
+        if self.queue[0].isNextTile():
+            return True
+        else:
+            return False
+
     
 '''
 Cards have suits, ranks, and positions. Everything else included
 here is for layout purposes.
 '''
 class Card:
-    def __init__(self,pos=[0,0],suit=CLUB,rank="",bg=WHITE):
+    def __init__(self,pos=[0,0],suit=CLUB,rank="",nextMove=[0,0],bg=WHITE):
         self.pos = [pos[0]*TS,pos[1]*TS]
         self.suit = suit
         self.rank = rank
@@ -289,10 +346,13 @@ class Card:
         self.ryoff = 0
         self.bgcol = bg
         self.thisMove = [0,0]
-        self.nextMove = [0,0]
+        self.nextMove = nextMove
+
+    def setPos(self,pos=[0,0]):
+        self.pos = [pos[0]*TS,pos[1]*TS]
         
-    def move(self):
-        if self.isNextTile():
+    def move(self,is_next_tile=False):
+        if is_next_tile:
             self.thisMove = self.nextMove
         self.pos = [self.pos[0]+self.thisMove[0]/CLOCKRATE,
                     self.pos[1]+self.thisMove[1]/CLOCKRATE]
@@ -356,17 +416,48 @@ class Card:
         if self.rank == "":
             self.suit_disp = f1.render(self.suit, True, self.suit_color)
         elif self.rank == "00":
+
             if gameover == False:
                 self.suit_disp = f3.render(self.suit, True, self.suit_color)
                 self.rank_disp = f3.render(self.rank, True, self.rank_color)
+
+                if self.thisMove[0] > 0:
+                    # To rotate 90 degrees:
+                    #self.rank_disp = pygame.transform.rotate(self.rank_disp, 90)
+                    self.rxoff += 2
+                    self.ryoff -= 2
+                    self.sxoff += 8
+
+                elif self.thisMove[1] < 0:
+                    # To rotate 180 degrees:
+                    self.sxoff += 1
+                    self.rxoff -= 1
+                    self.syoff -= 18
+                    self.ryoff += 12
+                    #self.suit_disp = pygame.transform.rotate(self.suit_disp, 180)
+                    #self.rank_disp = pygame.transform.rotate(self.rank_disp, 180)
+
+                elif self.thisMove[0] < 0:
+                    # To rotate -90 degrees:
+                    #self.rank_disp = pygame.transform.rotate(self.rank_disp, 270)
+                    self.rxoff -= 7
+                    self.ryoff -= 2
+                    self.sxoff -= 8
+                else:
+                    self.rxoff -= 3
+                    self.ryoff -= 2
+
             else:
                 self.suit_disp = f3.render("-", True, WHITE)
                 self.rank_disp = f3.render("XX", True, BLACK)
+                self.rxoff -= 2
         else:
             self.suit_disp = f2.render(self.suit, True, self.suit_color)
             
         self.suit_rect = self.suit_disp.get_rect()
         self.suit_rect.center = [self.pos[0]+self.sxoff,self.pos[1]+self.syoff]
+        self.rank_rect = self.rank_disp.get_rect()
+        self.rank_rect.center = [self.pos[0]+self.rxoff,self.pos[1]+self.ryoff]
 
         pygame.draw.rect(screen, self.bgcol, (self.pos[0]+4,self.pos[1]+4,TS-2,TS-2), border_radius=int(TS*.2))
         screen.blit(self.suit_disp, self.suit_rect)
@@ -375,12 +466,15 @@ class Card:
 def main():
 
     gb = Board()
-    sn = Snek([10,10])
+    sn = gb.snake
     #td = Deck()
 
     gameover = False
 
     while not gameover:
+
+        while len(gb.dealtCards) < 5:
+            gb.placeCard()
 
         for event in pygame.event.get():
 
@@ -397,9 +491,12 @@ def main():
                 if event.key == K_DOWN:
                     sn.steer([0,SPEED])
 
-        #td.printAll()
+        #Draw the background, then the snake over it
         screen.blit(background,  (0,0))
         sn.draw()
+
+        for dealt in gb.dealtCards:
+            dealt.draw()
 
         if not sn.isInBounds():
             gameover = True
@@ -413,18 +510,46 @@ def main():
         #
         # Will have to remove the Ss after the tail
         # of the snake leaves a square though.
-        if sn.queue[0].thisMove != [0,0]:
+        if sn.queue[1].thisMove != [0,0]:
             if sn.queue[0].isNextTile():
-                if gb.tileContains(hp) == "S":
-                    gameover = True
-                gb.field[hp[0]][hp[1]] = "S"
-                gb.field[tp[0]][tp[1]] = ""
+                
+                test_me = gb.tileContains(hp)
+                hp_key = str([hp[0]*TS,hp[1]*TS])
 
+                if hp_key in sn.hitboxes and sn.hitboxes[hp_key] != len(sn.queue):
+                    gameover = True
+                elif type(test_me) == Card:
+                    sn.addCard(test_me.suit,test_me.rank)
+                    gb.dealtCards.remove(test_me)
+                    gb.field[hp[0]][hp[1]] = ''
+                # Only add a new hitbox for the snake head after testing to be
+                # sur it didn't collide with itself at that same location
+                sn.addHitbox()    
+                
         # update everything
         pygame.display.flip()
         clock.tick(CLOCKRATE)
 
     print("GAME OVER")
+
+    cols = len(gb.field)
+    rows = len(gb.field[0])
+
+    # Debuggery
+    for row in range(rows):
+        for col in range(cols):
+            if gb.field[col][row] == "":
+                print(".",end="")
+            elif type(gb.field[col][row] is Card):
+                if gb.field[col][row] in gb.dealtCards:
+                    print("C",end="")
+                else:
+                    print("S",end="")
+            else:
+                print("?",end="")
+                
+        print()
+        
     screen.blit(background,  (0,0))
     sn.draw(True)
     pygame.display.flip()
