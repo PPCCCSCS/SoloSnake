@@ -26,7 +26,7 @@ class Card:
 
         if self.suit == "":
             self.isPileTop = True
-            self.tableau = int(rank)
+            #self.tableau = int(rank)
         else:
             self.isPileTop = False
 

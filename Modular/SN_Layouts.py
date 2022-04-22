@@ -48,24 +48,20 @@ class Klondike:
 
     def drawTableaus(self):
         for i,t in enumerate(self.Tableau):
-            k=i
+            k=1
             for j,c in enumerate(t):
-                if i>0:
-                    k=i-1
-                c.altPos = [TS*(COLS+self.col)+(c.tableau*(TS+4))+(j*(TS+4))+7,
-                            TS*(self.row+1)+8+(k*25)]
+                if j>0:
+                    k=1/3
+                c.altPos = [TS*(COLS+self.col)+(c.tableau*(TS+4))+7,
+                            TS*(self.row+k)+8+(j*(2*TS/3))]
                 c.draw()
-                pass
-
-
+                
     def pushCardToTableau(self,card):
 
-        #print(tableau,card.rank)
+        print(",t=",card.tableau,card)
         tableau = card.tableau
 
         if card.suit == "":
-            card.altPos = [TS*(COLS+self.col+tableau)+(self.col*2)+7+(tableau*4),
-                           TS*(self.row+1)+8+8*len(self.Tableau[tableau])]
             self.Tableau[tableau].append(card)
 
 
@@ -75,7 +71,7 @@ class Klondike:
             elif (card.suit in [HEART,DIAMOND] and self.Tableau[tableau][-1].suit in [CLUB,SPADE]) or \
                  (card.suit in [CLUB,SPADE] and self.Tableau[tableau][-1].suit in [HEART,DIAMOND]):
                 if RANKS.index(card.rank) == RANKS.index(self.Tableau[tableau][-1].rank) + 1:
-                    #card.altPos = [TS*(COLS+self.col+tableau)+(self.col*2)+7+(tableau*4),
+                    #card.altPos = [TS*(COLS+self.col)+(c.tableau*(TS+8))+7,
                     #       TS*(self.row+1)+8+8*len(self.Tableau[tableau])]
                     self.Tableau[tableau].append(card)
                     print("Appended.")
@@ -87,7 +83,7 @@ class Klondike:
         ### DEBUGGERY ###
         '''
         for tab in self.Tableau:
-            print(len(tab),end=",")
+            print(tab,len(tab),end=",")
         print()
-        '''
+        #'''
         
