@@ -29,7 +29,7 @@ def main():
             gb.klondike.pushCardToTableau(Card(suit="",
                                                rank=str(j),
                                                tableau=i-1))
-            print("tab in=",i,end="")
+            
     gb.klondike.drawTableaus()
 
     '''
@@ -92,7 +92,7 @@ def main():
                         gameover = True
                     else:
                         push_me = Card(suit=test_me.suit,rank=test_me.rank)
-                        push_me.tableau = sn.queue[sn.queue.index(test_me)].tableau+1
+                        push_me.tableau = sn.queue[sn.queue.index(test_me)].tableau
                         # Add card to Tableau ---> THIS NEEDS FIXING
                         print("ADDING ", push_me,push_me.tableau)
                         gb.klondike.pushCardToTableau(push_me)

@@ -58,7 +58,6 @@ class Klondike:
                 
     def pushCardToTableau(self,card):
 
-        print(",t=",card.tableau,card)
         tableau = card.tableau
 
         if card.suit == "":

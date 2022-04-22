@@ -20,13 +20,13 @@ class Snek:
         self.pos = pos
         self.vel = vel
         self.queue = [Card(self.pos,"v","00"),
-                      Card(self.pos,"","0"),
-                      Card(self.pos,"","1"),
-                      Card(self.pos,"","2"),
-                      Card(self.pos,"","3"),
-                      Card(self.pos,"","4"),
-                      Card(self.pos,"","5"),
-                      Card(self.pos,"","6")]
+                      Card(self.pos,"","0",tableau=0),
+                      Card(self.pos,"","1",tableau=1),
+                      Card(self.pos,"","2",tableau=2),
+                      Card(self.pos,"","3",tableau=3),
+                      Card(self.pos,"","4",tableau=4),
+                      Card(self.pos,"","5",tableau=5),
+                      Card(self.pos,"","6",tableau=6)]
         self.hitboxes = {str([int(self.queue[0].pos[0]),int(self.queue[0].pos[1])]):len(self.queue)}
         self.pile = []
         '''
