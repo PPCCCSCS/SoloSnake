@@ -69,7 +69,7 @@ class Klondike:
                 self.Tableau[tableau].append(card)
             elif (card.suit in [HEART,DIAMOND] and self.Tableau[tableau][-1].suit in [CLUB,SPADE]) or \
                  (card.suit in [CLUB,SPADE] and self.Tableau[tableau][-1].suit in [HEART,DIAMOND]):
-                if RANKS.index(card.rank) == RANKS.index(self.Tableau[tableau][-1].rank) + 1:
+                if RANKS.index(card.rank) == RANKS.index(self.Tableau[tableau][-1].rank) - 1:
                     #card.altPos = [TS*(COLS+self.col)+(c.tableau*(TS+8))+7,
                     #       TS*(self.row+1)+8+8*len(self.Tableau[tableau])]
                     self.Tableau[tableau].append(card)
