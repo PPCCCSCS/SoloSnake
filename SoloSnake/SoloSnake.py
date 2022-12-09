@@ -95,6 +95,8 @@ def main():
     print("GAME OVER")
     print(gb.klondike.Tableau)
     screen.blit(background,  (0,0))
+    for dealt in gb.dealtCards:
+            dealt.draw()
     sn.draw(True)
     gb.klondike.drawTableaus()
     pygame.display.flip()
