@@ -35,6 +35,15 @@ class Klondike:
                               TS),
                              2,
                              border_radius=int(TS*.2))
+            '''
+            if i in (3,4,5,6):
+                found_BG = f2.render(SUITS[i-4],TRUE,WHITE)
+                screen.blit(
+                    found_BG,
+                    )
+            '''
+                    
+                
         # Draw the Tableau backgrounds
         for i in range(7):
             pygame.draw.rect(background,
