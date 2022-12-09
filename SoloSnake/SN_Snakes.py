@@ -101,7 +101,7 @@ class Snek:
         # Only change directions if new direction is 90 degrees from previous,
         # or if the snake isn't moving yet
         if (go[0] == 0 and self.queue[0].thisMove[0] != 0) or \
-           (go[1] == 0 and self.queue[1].thisMove[1] != 0) or \
+           (go[1] == 0 and self.queue[0].thisMove[1] != 0) or \
            (self.queue[0].thisMove == [0,0]):
             self.queue[0].nextMove = go
 
