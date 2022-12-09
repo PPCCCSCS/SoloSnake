@@ -35,7 +35,7 @@ def main():
 
         for event in pygame.event.get():
 
-            if event.type == pygame.KEYUP:
+            if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     sys.exit()
 
